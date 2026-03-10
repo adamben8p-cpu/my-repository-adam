@@ -6,7 +6,9 @@ import { Coffee, Coins } from "lucide-react";
 import Link from "next/link";
 
 export default function Navbar() {
-  const { balance, clearCommonState } = useCommonStore();
+  // 1. Added setBalance here
+  const { balance, setBalance, clearCommonState } = useCommonStore();
+
   return (
     <nav className="backdrop-blur-md bg-black/30">
       <div className="max-w-7xl mx-auto px-4 py-2 sm:p-4">
@@ -34,11 +36,16 @@ export default function Navbar() {
             )}
 
             <div className="flex items-center gap-1 sm:gap-2 bg-gray-800/50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full border border-gray-700 text-white">
-              <span className="text-base sm:text-lg font-medium">
-                {balance?.toFixed(2) || "0.00"}
-              </span>
+              {/* 2. Replaced the <span> with an <input> */}
+              <input
+                type="number"
+                value={balance}
+                onChange={(e) => setBalance(Number(e.target.value))}
+                className="bg-transparent text-base sm:text-lg font-medium w-20 sm:w-24 outline-none border-none text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
               <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
             </div>
+            
             <a
               href="https://www.buymeacoffee.com/akshaygore"
               target="_blank"
