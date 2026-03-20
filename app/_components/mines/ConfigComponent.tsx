@@ -174,10 +174,10 @@ export default function ConfigComponent() {
       <button
         onClick={
           betAmount === null ||
-          betAmount <= 0 ||
-          numberOfMines <= 0 ||
-          gameStarted ||
-          betAmount > balance
+            betAmount <= 0 ||
+            numberOfMines <= 0 ||
+            gameStarted ||
+            betAmount > balance
             ? handleDisabledBetClick
             : handleBet
         }
@@ -199,7 +199,10 @@ export default function ConfigComponent() {
           <p className="text-sm text-gray-400">
             {betAmount &&
               multiplier > 0 &&
-              `Current Profit: $${currentProfit?.toFixed(2)}`}
+              `Current Profit: $${currentProfit?.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`}
           </p>
           <button
             onClick={handleCashOut}
@@ -209,6 +212,7 @@ export default function ConfigComponent() {
           </button>
         </div>
       )}
+
 
       {/* Win Modal */}
       <Modal
