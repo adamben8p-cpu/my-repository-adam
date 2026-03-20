@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Matter from "matter-js";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { usePlinkoStore } from "@/app/_store/plinkoStore";
+import { useCommonStore } from "@/app/_store/commonStore";
+import { addGameResult } from "@/app/_constants/data";
 
 export default function PlikoGame() {
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -12,10 +13,8 @@ export default function PlikoGame() {
   const runnerRef = useRef<Matter.Runner | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [score, setScore] = useState(0);
-  const [ballsLeft, setBallsLeft] = useState(10000);
-  const [gameOver, setGameOver] = useState(false);
-  const [gameStarted, setGameStarted] = useState(true);
+  const { ballsToDrop, popBet } = usePlinkoStore();
+  const gameStarted = true;
   const [boardDimensions, setBoardDimensions] = useState({
     width: 0,
     height: 0,
@@ -49,7 +48,6 @@ export default function PlikoGame() {
   useEffect(() => {
     if (
       !sceneRef.current ||
-      gameStarted === false ||
       boardDimensions.width === 0
     )
       return;
@@ -188,9 +186,17 @@ export default function PlikoGame() {
           );
           const multiplier = multipliers[slotIndex];
 
-          // Update score - use a base value of 10 multiplied by the multiplier
-          const points = Math.round(10 * multiplier);
-          setScore((prevScore) => prevScore + points);
+          // Calculate profit based on the ball's bet amount and multiplier
+          const betAmount = ball.plugin?.betAmount || 0;
+          const profit = parseFloat((betAmount * multiplier).toFixed(2));
+          
+          if (profit > 0) {
+            const currentBalance = useCommonStore.getState().balance || 0;
+            const newBalance = currentBalance + profit;
+            useCommonStore.getState().setBalance(newBalance);
+            // Record game result
+            addGameResult("Plinko", "Win", profit, newBalance);
+          }
 
           // Remove the ball after a short delay
           setTimeout(() => {
@@ -222,8 +228,8 @@ export default function PlikoGame() {
   }, [gameStarted, boardDimensions]);
 
   // Drop a ball
-  const dropBall = () => {
-    if (!engineRef.current || ballsLeft <= 0) return;
+  const dropBall = (betAmount: number) => {
+    if (!engineRef.current) return;
 
     // Get the board width from the renderer
     const boardWidth = boardDimensions.width;
@@ -237,48 +243,29 @@ export default function PlikoGame() {
         friction: 0.005,
         density: 0.001,
         label: "ball",
+        plugin: { betAmount },
         render: { fillStyle: "#f9d276" }, // Gold ball
       }
     );
 
     Matter.World.add(engineRef.current.world, ball);
-    setBallsLeft((prev) => prev - 1);
-
-    // Check if game over
-    if (ballsLeft <= 1) {
-      setTimeout(() => {
-        setGameOver(true);
-      }, 3000); // Wait for the last ball to settle
-    }
   };
 
-  const resetGame = () => {
-    setScore(0);
-    setBallsLeft(10);
-    setGameOver(false);
-    setGameStarted(false);
-
-    if (renderRef.current) {
-      Matter.Render.stop(renderRef.current);
-      renderRef.current.canvas.remove();
-      renderRef.current = null;
+  // Listen for ball drops from the store
+  const prevBallsToDrop = useRef(0);
+  useEffect(() => {
+    if (ballsToDrop > prevBallsToDrop.current) {
+      const difference = ballsToDrop - prevBallsToDrop.current;
+      prevBallsToDrop.current = ballsToDrop;
+      
+      for (let i = 0; i < difference; i++) {
+        const bet = popBet();
+        if (bet !== undefined) {
+          dropBall(bet);
+        }
+      }
     }
-
-    if (runnerRef.current) {
-      Matter.Runner.stop(runnerRef.current);
-      runnerRef.current = null;
-    }
-
-    if (engineRef.current) {
-      Matter.World.clear(engineRef.current.world, false);
-      Matter.Engine.clear(engineRef.current);
-      engineRef.current = null;
-    }
-  };
-
-  const startGame = () => {
-    setGameStarted(true);
-  };
+  }, [ballsToDrop, popBet]);
 
   // Function to get background color for multiplier slots
   const getMultiplierColor = (multiplier: number) => {
@@ -291,52 +278,29 @@ export default function PlikoGame() {
 
   return (
     <div className="flex flex-col items-center w-full" ref={containerRef}>
-      {!gameStarted ? (
-        <div className="flex flex-col items-center text-white"></div>
-      ) : (
-        <>
-          <div
-            ref={sceneRef}
-            className="w-full max-w-full sm:max-w-[90%] md:max-w-[700px] bg-slate-900 relative mb-4 overflow-hidden rounded-lg"
-            style={{ height: `${boardDimensions.height}px` }}
-          >
-            {/* Multiplier slots display */}
-            <div className="absolute bottom-0 left-0 right-0 flex justify-around z-10 text-white font-bold">
-              {multipliers.map((value, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-center h-8 sm:h-10 md:h-12 text-xs sm:text-sm md:text-base ${getMultiplierColor(
-                    value
-                  )}`}
-                  style={{
-                    width: `${100 / multipliers.length}%`,
-                    minWidth: "20px",
-                  }}
-                >
-                  {value}x
-                </div>
-              ))}
+      <div
+        ref={sceneRef}
+        className="w-full max-w-full sm:max-w-[90%] md:max-w-[700px] bg-slate-900 relative mb-4 overflow-hidden rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+        style={{ height: `${boardDimensions.height}px` }}
+      >
+        {/* Multiplier slots display */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-around z-10 text-white font-bold">
+          {multipliers.map((value, index) => (
+            <div
+              key={index}
+              className={`flex items-center justify-center h-8 sm:h-10 md:h-12 text-xs sm:text-sm md:text-base ${getMultiplierColor(
+                value
+              )}`}
+              style={{
+                width: `${100 / multipliers.length}%`,
+                minWidth: "20px",
+              }}
+            >
+              {value}x
             </div>
-          </div>
-
-          <div className="flex justify-between items-center w-full max-w-[700px] px-4 mb-4">
-            <div className="text-white text-sm sm:text-base">
-              Score: <span className="font-bold">{score}</span>
-            </div>
-            <div className="text-white text-sm sm:text-base">
-              Balls: <span className="font-bold">{ballsLeft}</span>
-            </div>
-          </div>
-
-          <Button
-            onClick={dropBall}
-            disabled={ballsLeft <= 0}
-            className="px-4 sm:px-6 md:px-8 py-2 bg-yellow-500 hover:bg-yellow-600 text-sm sm:text-base"
-          >
-            Drop Ball
-          </Button>
-        </>
-      )}
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

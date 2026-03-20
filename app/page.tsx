@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 
-import { Gamepad2, Gem, Rocket } from "lucide-react";
+import { Gamepad2, Gem, Rocket, Triangle } from "lucide-react";
 import Link from "next/link";
 
 const games = [
@@ -15,6 +15,12 @@ const games = [
     link: "/dice",
     logo: <Rocket size={48} />,
     img: "/assets/dice.png",
+  },
+  {
+    name: "PLINKO",
+    link: "/plinko",
+    logo: <Triangle size={48} />,
+    img: "/assets/plinko.png", // Will default to coming-soon if doesn't exist, which fits Plinko
   },
 ];
 
