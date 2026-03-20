@@ -76,8 +76,8 @@ export default function PlikoGame() {
     // Create walls and pegs
     const wallOptions = {
       isStatic: true,
-      // render: { fillStyle: "#0f172a" },
-      render: { fillStyle: "white" },
+      render: { fillStyle: "#0f172a" },
+      // render: { fillStyle: "white" },
     };
 
     // Walls
@@ -146,11 +146,39 @@ export default function PlikoGame() {
       }
     }
 
+    // Triangle border walls
+    const triangleLeft = Matter.Bodies.rectangle(
+      boardWidth * 0.25,          // x position
+      boardHeight * 0.35,         // y position
+      boardHeight * 0.7,          // wall length
+      8,                          // thickness
+      {
+        isStatic: true,
+        angle: Math.PI * 0.23,    // tilt inward
+        render: { fillStyle: "#0f172a" }
+      }
+    );
+
+    const triangleRight = Matter.Bodies.rectangle(
+      boardWidth * 0.75,
+      boardHeight * 0.35,
+      boardHeight * 0.7,
+      8,
+      {
+        isStatic: true,
+        angle: -Math.PI * 0.23,   // tilt inward
+        render: { fillStyle: "#0f172a" }
+      }
+    );
+
+
     // Add all bodies to the world
     Matter.World.add(engine.world, [
       leftWall,
       rightWall,
       ground,
+      triangleLeft,
+      triangleRight,
       ...slotDividers,
       ...pegs,
     ]);
