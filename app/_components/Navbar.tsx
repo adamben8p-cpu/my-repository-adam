@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useCommonStore } from "@/app/_store/commonStore";
@@ -9,58 +8,60 @@ import { useState, useEffect } from "react";
 export default function Navbar() {
   const { balance, setBalance, clearCommonState } = useCommonStore();
 
-  // Local state to manage the text inside the input box
   const [displayValue, setDisplayValue] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Suffixes: k(Thousand), m(Million), b(Billion), t(Trillion), q(Quadrillion), 
-  // Q(Quintillion), s(Sextillion), S(Septillion), o(Octillion), n(Nonillion), d(Decillion)
   const suffixes = ["", "k", "m", "b", "t", "q", "Q", "s", "S", "o", "n", "d"];
 
-  // Converts 1000000 -> "1m"
   const formatBalance = (num: number) => {
-    if (num === 0) return "0";
+    if (!num) return "0";
     if (num < 1000) return num.toFixed(2);
 
     const exp = Math.floor(Math.log10(Math.abs(num)) / 3);
     const suffixIndex = Math.min(exp, suffixes.length - 1);
     const shortValue = num / Math.pow(1000, suffixIndex);
 
-    return (
-      shortValue.toFixed(2).replace(/\.?0+$/, "") + suffixes[suffixIndex]
-    );
+    return shortValue.toFixed(2).replace(/\.?0+$/, "") + suffixes[suffixIndex];
   };
 
-  // Converts "1k" -> 1000
   const handleInputChange = (val: string) => {
     setDisplayValue(val);
 
-    // Allow typing like "500." or "1.2.3" without breaking
+    // Allow empty while typing
+    if (val.trim() === "") {
+      setBalance(0);
+      return;
+    }
+
+    // Allow: digits, optional single dot, optional letters at end
     if (!/^[0-9]*\.?[0-9]*[a-zA-Z]*$/.test(val)) return;
 
-    const match = val.match(/^([0-9.]+)([a-zA-Z]*)$/);
+    const match = val.match(/^([0-9]*\.?[0-9]*)([a-zA-Z]*)$/);
     if (!match) return;
 
-    const numberPart = parseFloat(match[1]);
+    const numberStr = match[1];
     const suffixPart = match[2].toLowerCase();
 
+    if (numberStr === "" || numberStr === ".") return;
+
+    const numberPart = parseFloat(numberStr);
     if (isNaN(numberPart)) return;
 
     let multiplier = 1;
     const index = suffixes.findIndex((s) => s.toLowerCase() === suffixPart);
-    if (index !== -1) multiplier = Math.pow(1000, index);
+    if (index !== -1) {
+      multiplier = Math.pow(1000, index);
+    }
 
     setBalance(numberPart * multiplier);
   };
 
-
-  // Sync the input text whenever the global balance changes (e.g., after a win/loss)
+  // Sync from global balance only when not actively editing
   useEffect(() => {
-    // Only update the input if the user is NOT actively typing
-    if (!displayValue.endsWith(".")) {
+    if (!isEditing) {
       setDisplayValue(formatBalance(balance));
     }
-  }, [balance]);
-
+  }, [balance, isEditing]);
 
   return (
     <nav className="backdrop-blur-md bg-black/30">
@@ -94,7 +95,11 @@ export default function Navbar() {
                 type="text"
                 value={displayValue}
                 onChange={(e) => handleInputChange(e.target.value)}
-                onBlur={() => setDisplayValue(formatBalance(balance))}
+                onFocus={() => setIsEditing(true)}
+                onBlur={() => {
+                  setIsEditing(false);
+                  setDisplayValue(formatBalance(balance));
+                }}
                 className="bg-transparent text-base sm:text-lg font-medium w-20 sm:w-28 outline-none border-none text-white text-right"
                 placeholder="0.00"
               />
