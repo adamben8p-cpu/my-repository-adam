@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const { balance, setBalance, clearCommonState } = useCommonStore();
-  
+
   // Local state to manage the text inside the input box
   const [displayValue, setDisplayValue] = useState("");
 
@@ -34,30 +34,33 @@ export default function Navbar() {
   const handleInputChange = (val: string) => {
     setDisplayValue(val);
 
-    // Regex to separate the number from the letter suffix
+    // Allow typing like "500." or "1.2.3" without breaking
+    if (!/^[0-9]*\.?[0-9]*[a-zA-Z]*$/.test(val)) return;
+
     const match = val.match(/^([0-9.]+)([a-zA-Z]*)$/);
-    if (match) {
-      const numberPart = parseFloat(match[1]);
-      const suffixPart = match[2].toLowerCase();
+    if (!match) return;
 
-      let multiplier = 1;
-      const index = suffixes.findIndex((s) => s.toLowerCase() === suffixPart);
-      
-      if (index !== -1) {
-        multiplier = Math.pow(1000, index);
-      }
+    const numberPart = parseFloat(match[1]);
+    const suffixPart = match[2].toLowerCase();
 
-      const finalValue = numberPart * multiplier;
-      if (!isNaN(finalValue)) {
-        setBalance(finalValue);
-      }
-    }
+    if (isNaN(numberPart)) return;
+
+    let multiplier = 1;
+    const index = suffixes.findIndex((s) => s.toLowerCase() === suffixPart);
+    if (index !== -1) multiplier = Math.pow(1000, index);
+
+    setBalance(numberPart * multiplier);
   };
+
 
   // Sync the input text whenever the global balance changes (e.g., after a win/loss)
   useEffect(() => {
-    setDisplayValue(formatBalance(balance));
+    // Only update the input if the user is NOT actively typing
+    if (!displayValue.endsWith(".")) {
+      setDisplayValue(formatBalance(balance));
+    }
   }, [balance]);
+
 
   return (
     <nav className="backdrop-blur-md bg-black/30">
