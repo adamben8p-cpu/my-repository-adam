@@ -117,10 +117,13 @@ export default function PlikoGame() {
     // Create pegs in triangle formation - white pegs as in the image
     const pegOptions = {
       isStatic: true,
-      render: { fillStyle: "#ffffff" }, // White pegs
-      restitution: 0.5,
-      friction: 0.1,
+      render: { fillStyle: "#ffffff" },
+      restitution: 0.9,       // strong bounce
+      friction: 0,            // no sliding friction
+      frictionStatic: 0,
+      frictionAir: 0.00001,   // almost no air drag
     };
+
 
     const pegs = [];
     const rows = 16; // Matches the image (12 rows)
@@ -234,6 +237,15 @@ export default function PlikoGame() {
       });
     });
 
+    Matter.Events.on(engine, "beforeUpdate", () => {
+      engine.world.bodies.forEach(body => {
+        if (body.label === "ball") {
+          Matter.Body.applyForce(body, body.position, { x: 0, y: 0.00003 });
+        }
+      });
+    });
+
+
     // Cleanup function
     return () => {
       if (renderRef.current) {
@@ -263,18 +275,21 @@ export default function PlikoGame() {
     const boardWidth = boardDimensions.width;
 
     const ball = Matter.Bodies.circle(
-      boardWidth / 2 + (Math.random() * 40 - 20), // Random x position near the center
-      boardDimensions.height * 0.06, // y position at the top (responsive)
-      Math.max(4, Math.min(6, boardWidth / 120)), // responsive radius
+      boardWidth / 2 + (Math.random() * 40 - 20),
+      boardDimensions.height * 0.06,
+      Math.max(4, Math.min(6, boardWidth / 120)),
       {
-        restitution: 0.8,
-        friction: 0.005,
-        density: 0.001,
+        restitution: 0.92,       // very bouncy
+        friction: 0,
+        frictionStatic: 0,
+        frictionAir: 0.00002,    // extremely low drag
+        density: 0.0008,
         label: "ball",
         plugin: { betAmount },
-        render: { fillStyle: "#f9d276" }, // Gold ball
+        render: { fillStyle: "#f9d276" },
       }
     );
+
 
     Matter.World.add(engineRef.current.world, ball);
   };
