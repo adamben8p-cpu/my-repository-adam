@@ -77,7 +77,9 @@ export default function PlikoGame() {
     const wallOptions = {
       isStatic: true,
       render: { fillStyle: "#0f172a" },
-      // render: { fillStyle: "white" },
+      restitution: 0.5,
+      friction: 0,
+      frictionStatic: 0,
     };
 
     // Walls
@@ -149,28 +151,58 @@ export default function PlikoGame() {
       }
     }
 
-    // Triangle border walls
+    // Calculate exact outer peg bounds for perfect triangle borders
+    const topLeftX = boardWidth / 2 - pegSpacing;
+    const topLeftY = startY;
+    const bottomLeftX = boardWidth / 2 - ((rows - 1 + 3 - 1) * pegSpacing) / 2; 
+    const bottomLeftY = startY + (rows - 1) * pegSpacing;
+
+    const dx = bottomLeftX - topLeftX;
+    const dy = bottomLeftY - topLeftY;
+    const borderLength = Math.sqrt(dx * dx + dy * dy) + pegSpacing * 3; 
+    const angleLeft = Math.atan2(dy, dx);
+    const offsetLeftX = Math.cos(angleLeft - Math.PI / 2) * pegSpacing * 0.7; 
+    const offsetLeftY = Math.sin(angleLeft - Math.PI / 2) * pegSpacing * 0.7;
+    const midLeftX = (topLeftX + bottomLeftX) / 2 + offsetLeftX;
+    const midLeftY = (topLeftY + bottomLeftY) / 2 + offsetLeftY;
+
     const triangleLeft = Matter.Bodies.rectangle(
-      boardWidth * 0.25,          // x position
-      boardHeight * 0.35,         // y position
-      boardHeight * 0.7,          // wall length
-      8,                          // thickness
+      midLeftX,
+      midLeftY,
+      borderLength,
+      Math.max(10, boardWidth * 0.05),
       {
         isStatic: true,
-        angle: Math.PI * 0.23,    // tilt inward
-        render: { fillStyle: "#0f172a" }
+        angle: angleLeft,
+        render: { fillStyle: "#0f172a" },
+        restitution: 0.5,
+        friction: 0,
+        frictionStatic: 0,
       }
     );
 
+    const topRightX = boardWidth / 2 + pegSpacing;
+    const bottomRightX = boardWidth / 2 + ((rows - 1 + 3 - 1) * pegSpacing) / 2;
+    const dxRight = bottomRightX - topRightX;
+    const angleRight = Math.atan2(dy, dxRight);
+    
+    const offsetRightX = Math.cos(angleRight + Math.PI / 2) * pegSpacing * 0.7;
+    const offsetRightY = Math.sin(angleRight + Math.PI / 2) * pegSpacing * 0.7;
+    const midRightX = (topRightX + bottomRightX) / 2 + offsetRightX;
+    const midRightY = (topLeftY + bottomLeftY) / 2 + offsetRightY;
+
     const triangleRight = Matter.Bodies.rectangle(
-      boardWidth * 0.75,
-      boardHeight * 0.35,
-      boardHeight * 0.7,
-      8,
+      midRightX,
+      midRightY,
+      borderLength,
+      Math.max(10, boardWidth * 0.05),
       {
         isStatic: true,
-        angle: -Math.PI * 0.23,   // tilt inward
-        render: { fillStyle: "#0f172a" }
+        angle: angleRight,
+        render: { fillStyle: "#0f172a" },
+        restitution: 0.5,
+        friction: 0,
+        frictionStatic: 0,
       }
     );
 
@@ -240,7 +272,14 @@ export default function PlikoGame() {
     Matter.Events.on(engine, "beforeUpdate", () => {
       engine.world.bodies.forEach(body => {
         if (body.label === "ball") {
-          Matter.Body.applyForce(body, body.position, { x: 0, y: 0.00003 });
+          // If the ball evaluates to moving very slowly, give it a tiny random horizontal nudge
+          // to prevent it from balancing perfectly on a peg and freezing.
+          if (Math.abs(body.velocity.x) < 0.1 && Math.abs(body.velocity.y) < 0.1) {
+            Matter.Body.applyForce(body, body.position, { 
+              x: (Math.random() - 0.5) * 0.00005, 
+              y: 0 
+            });
+          }
         }
       });
     });
