@@ -24,6 +24,7 @@ export default function AviaComponent() {
     let localDistance = 0; 
     let planeY = height / 2;
     let textPopups: { x: number, y: number, text: string, type: string, life: number }[] = [];
+    let prevGameState = useAviaStore.getState().gameState;
 
     const drawPlane = (x: number, y: number, angle: number) => {
       ctx.save();
@@ -98,6 +99,15 @@ export default function AviaComponent() {
       lastTime = time;
 
       const state = useAviaStore.getState();
+      
+      // Reset variables on new flight
+      if (state.gameState === "FLYING" && prevGameState !== "FLYING") {
+        localDistance = 0;
+        planeY = height / 2;
+        textPopups = [];
+      }
+      prevGameState = state.gameState;
+
       const speedMultiplier = state.speed; 
       
       const advanceRate = state.gameState === "FLYING" ? 1.0 * speedMultiplier * dt : 0;
