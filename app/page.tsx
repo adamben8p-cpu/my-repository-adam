@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 
-import { Gamepad2, Gem, Rocket, Triangle, TrendingUp } from "lucide-react";
+import { Gamepad2, Gem, Rocket, Triangle, TrendingUp, Activity } from "lucide-react";
 import Link from "next/link";
 
 const games = [
@@ -27,6 +27,12 @@ const games = [
     link: "/crash",
     logo: <TrendingUp size={48} />,
     img: "/assets/crash.png",
+  },
+  {
+    name: "LIMBO",
+    link: "/limbo",
+    logo: <Activity size={48} />,
+    img: "/assets/limbo.png",
   },
 ];
 
