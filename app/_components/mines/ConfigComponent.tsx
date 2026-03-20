@@ -145,7 +145,7 @@ export default function ConfigComponent() {
             <option value="" disabled>
               Select number of mines
             </option>
-            {[1, 3, 5, 10].map((numMines) => (
+            {Array.from({ length: 24 }, (_, i) => i + 1).map((numMines) => (
               <option key={numMines} value={numMines}>
                 {numMines} {numMines === 1 ? "Mine" : "Mines"}
               </option>
@@ -169,6 +169,7 @@ export default function ConfigComponent() {
           </div>
         </div>
       </div>
+
 
       {/* Bet Button */}
       <button
