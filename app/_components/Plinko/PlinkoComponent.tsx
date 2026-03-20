@@ -29,9 +29,9 @@ export default function PlikoGame() {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
         // Set the board width to container width, with a max of 700px
-        const width = Math.min(containerWidth, 700);
+        const width = Math.min(containerWidth, 500);
         // Maintain aspect ratio close to original
-        const height = Math.min(width * 1.14, 800);
+        const height = Math.min(width * 1.14, 600);
         setBoardDimensions({ width, height });
       }
     };
@@ -189,7 +189,7 @@ export default function PlikoGame() {
           // Calculate profit based on the ball's bet amount and multiplier
           const betAmount = ball.plugin?.betAmount || 0;
           const profit = parseFloat((betAmount * multiplier).toFixed(2));
-          
+
           if (profit > 0) {
             const currentBalance = useCommonStore.getState().balance || 0;
             const newBalance = currentBalance + profit;
@@ -257,7 +257,7 @@ export default function PlikoGame() {
     if (ballsToDrop > prevBallsToDrop.current) {
       const difference = ballsToDrop - prevBallsToDrop.current;
       prevBallsToDrop.current = ballsToDrop;
-      
+
       for (let i = 0; i < difference; i++) {
         const bet = popBet();
         if (bet !== undefined) {
