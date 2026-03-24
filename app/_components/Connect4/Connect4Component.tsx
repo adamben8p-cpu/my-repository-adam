@@ -115,18 +115,14 @@ useEffect(() => {
       setIsBetPlaced(false); 
 
       // Return to menu after 3 seconds
-      const timer = setTimeout(() => {
-        // 1. Reset the logic state in the store
-        resetGame(); 
-        
-        // 2. Explicitly hide the board and show the Config menu
-        setGameStarted(false); 
-        
-        // 3. Clear local UI feedback
-        setGameResult(null);
-        setResultMultiplier(0);
-        setSessionProfit(0);
-      }, 3000);
+// Inside your game end useEffect timer:
+const timer = setTimeout(() => {
+  resetGame(); // This now sets gameStarted to false and mode to menu
+  setGameResult(null);
+  setResultMultiplier(0);
+  setSessionProfit(0);
+}, 3000);
+
 
       return () => clearTimeout(timer);
     }
