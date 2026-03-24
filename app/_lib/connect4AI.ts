@@ -18,14 +18,20 @@ const checkWinner = (board: (Player)[][], player: Player): boolean => {
 };
 
 // Gets valid columns, starting from the center for speed
+// Replace your getValidMoves function with this exact block:
 const getValidMoves = (board: (Player)[][]): number[] => {
   const moves: number[] = [];
-  const priority = [3, 2, 4, 1, 5, 0, 6]; // Center out
+  // Column priority: 3 is center, then out to the edges
+  const priority = [3, 2, 4, 1, 5, 0, 6]; 
   for (const col of priority) {
-    if (board[0][col] === null) moves.push(col);
+    // Check if the top row of the column is empty
+    if (board[0][col] === null) {
+      moves.push(col);
+    }
   }
   return moves;
 };
+
 
 // Creates a new board state for simulation
 const makeMove = (board: (Player)[][], column: number, player: Player): (Player)[][] | null => {
