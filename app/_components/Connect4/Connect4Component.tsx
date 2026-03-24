@@ -33,21 +33,32 @@ export default function Connect4Component() {
   const [resultMultiplier, setResultMultiplier] = useState(0);
 
   // Handle AI move
-  useEffect(() => {
-    if (gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus && !aiThinking) {
-      setAiThinking(true);
+// Replace your AI move useEffect with this:
+useEffect(() => {
+  const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
+  
+  if (isAITurn && !aiThinking) {
+    setAiThinking(true);
 
-      const timer = setTimeout(() => {
+    // Use a small timeout so the UI has a chance to render the "Thinking" state
+    const timer = setTimeout(() => {
+      try {
         const move = getAIMove(board);
         if (move !== -1) {
           makeMove(move);
         }
+      } catch (error) {
+        console.error("AI Error:", error);
+      } finally {
         setAiThinking(false);
-      }, 1000);
+      }
+    }, 500); // 500ms is enough to feel "natural"
 
-      return () => clearTimeout(timer);
-    }
-  }, [currentPlayer, gameMode, gameStarted, gameStatus, aiThinking, board, makeMove, setAiThinking]);
+    return () => clearTimeout(timer);
+  }
+}, [currentPlayer, gameMode, gameStarted, gameStatus, board]); 
+// NOTE: Removed aiThinking and makeMove from dependencies to stop the loop
+
 
   // Handle game end
   useEffect(() => {
