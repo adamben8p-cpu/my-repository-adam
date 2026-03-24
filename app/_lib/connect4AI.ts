@@ -3,6 +3,7 @@ import { Player } from '@/app/_store/connect4Store';
 const ROWS = 6;
 const COLS = 7;
 
+// Efficient win checker
 const checkWinner = (board: (Player)[][], player: Player): boolean => {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -16,16 +17,17 @@ const checkWinner = (board: (Player)[][], player: Player): boolean => {
   return false;
 };
 
+// Gets valid columns, starting from the center for speed
 const getValidMoves = (board: (Player)[][]): number[] => {
   const moves: number[] = [];
-  // Standard Connect 4 priority: Center columns first for better pruning
-  const priority = [3, 2, 4, 1, 5, 0, 6]; 
+  const priority = [3, 2, 4, 1, 5, 0, 6]; // Center out
   for (const col of priority) {
     if (board[0][col] === null) moves.push(col);
   }
   return moves;
 };
 
+// Creates a new board state for simulation
 const makeMove = (board: (Player)[][], column: number, player: Player): (Player)[][] | null => {
   const newBoard = board.map(row => [...row]);
   for (let row = ROWS - 1; row >= 0; row--) {
@@ -37,43 +39,47 @@ const makeMove = (board: (Player)[][], column: number, player: Player): (Player)
   return null;
 };
 
+// Simple heuristic for board strength
 const evaluateBoard = (board: (Player)[][]): number => {
-  // Simple heuristic: count potential lines
   let score = 0;
-  const player = 2; // AI
-  const opponent = 1;
+  const ai = 2;
+  const human = 1;
 
-  const checkLine = (a: Player, b: Player, c: Player, d: Player) => {
-    const cells = [a, b, c, d];
-    const pCount = cells.filter(x => x === player).length;
-    const oCount = cells.filter(x => x === opponent).length;
-    const eCount = cells.filter(x => x === null).length;
+  const checkLine = (cells: (Player)[]) => {
+    const aiCount = cells.filter(x => x === ai).length;
+    const humanCount = cells.filter(x => x === human).length;
+    const emptyCount = cells.filter(x => x === null).length;
 
-    if (pCount === 4) return 10000;
-    if (pCount === 3 && eCount === 1) return 100;
-    if (pCount === 2 && eCount === 2) return 10;
-    if (oCount === 3 && eCount === 1) return -1000; // High priority to block
+    if (aiCount === 4) return 10000;
+    if (aiCount === 3 && emptyCount === 1) return 100;
+    if (aiCount === 2 && emptyCount === 2) return 10;
+    if (humanCount === 3 && emptyCount === 1) return -1000; // Block human
     return 0;
   };
 
+  // Horizontal
   for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS - 3; c++) score += checkLine(board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]);
+    for (let c = 0; c < COLS - 3; c++) score += checkLine([board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]]);
   }
+  // Vertical
   for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS - 3; r++) score += checkLine(board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]);
+    for (let r = 0; r < ROWS - 3; r++) score += checkLine([board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]]);
   }
+  // Diagonal
   for (let r = 0; r < ROWS - 3; r++) {
     for (let c = 0; c < COLS - 3; c++) {
-      score += checkLine(board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]);
-      score += checkLine(board[r+3][c], board[r+2][c+1], board[r+1][c+2], board[r][c+3]);
+      score += checkLine([board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]]);
+      score += checkLine([board[r+3][c], board[r+2][c+1], board[r+1][c+2], board[r][c+3]]);
     }
   }
   return score;
 };
 
+// Recursive Minimax with Alpha-Beta Pruning
 const minimax = (board: (Player)[][], depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
   if (checkWinner(board, 2)) return 100000 - depth;
   if (checkWinner(board, 1)) return -100000 + depth;
+  
   const moves = getValidMoves(board);
   if (depth >= 5 || moves.length === 0) return evaluateBoard(board);
 
@@ -106,8 +112,10 @@ const minimax = (board: (Player)[][], depth: number, alpha: number, beta: number
 
 export const getAIMove = (board: (Player)[][]): number => {
   const moves = getValidMoves(board);
+  if (moves.length === 0) return -1;
+
   let bestScore = -Infinity;
-  let bestMove = moves[0] ?? -1;
+  let bestMove = moves[0];
 
   for (const col of moves) {
     const next = makeMove(board, col, 2);
