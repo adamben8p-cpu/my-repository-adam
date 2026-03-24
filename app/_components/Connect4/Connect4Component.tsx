@@ -33,24 +33,33 @@ export default function Connect4Component() {
   const [resultMultiplier, setResultMultiplier] = useState(0);
   const [sessionProfit, setSessionProfit] = useState(0); // Added state to fix build error
 
-  useEffect(() => {
-    const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
-    
-    if (isAITurn && !aiThinking) {
-      setAiThinking(true);
-      const timer = setTimeout(() => {
-        try {
-          const move = getAIMove(board);
-          if (move !== -1) makeMove(move);
-        } catch (error) {
-          console.error("AI Error:", error);
-        } finally {
-          setAiThinking(false);
+// Replace your AI move useEffect with this one:
+useEffect(() => {
+  const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
+  
+  // We only start thinking if it's the AI turn and it isn't ALREADY thinking
+  if (isAITurn && !aiThinking) {
+    setAiThinking(true);
+
+    const timer = setTimeout(() => {
+      try {
+        const move = getAIMove(board);
+        if (move !== -1) {
+          makeMove(move);
         }
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [currentPlayer, gameMode, gameStarted, gameStatus, board, aiThinking, makeMove, setAiThinking]);
+      } catch (err) {
+        console.error("AI Error:", err);
+      } finally {
+        // Crucial: This must happen after the move is processed
+        setAiThinking(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }
+  // DO NOT add aiThinking or makeMove to this array!
+}, [currentPlayer, gameMode, gameStarted, gameStatus, board]); 
+
 
   useEffect(() => {
     if (gameStatus && gameStarted && isBetPlaced) {
