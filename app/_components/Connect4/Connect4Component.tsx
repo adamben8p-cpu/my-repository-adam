@@ -32,36 +32,29 @@ export default function Connect4Component() {
   const [gameResult, setGameResult] = useState<string | null>(null);
   const [resultMultiplier, setResultMultiplier] = useState(0);
 
-  // Handle AI move
-// Replace your AI move useEffect with this:
-useEffect(() => {
-  const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
-  
-  if (isAITurn && !aiThinking) {
-    setAiThinking(true);
-
-    // Use a small timeout so the UI has a chance to render the "Thinking" state
-    const timer = setTimeout(() => {
-      try {
-        const move = getAIMove(board);
-        if (move !== -1) {
-          makeMove(move);
-        }
-      } catch (error) {
-        console.error("AI Error:", error);
-      } finally {
-        setAiThinking(false);
-      }
-    }, 500); // 500ms is enough to feel "natural"
-
-    return () => clearTimeout(timer);
-  }
-}, [currentPlayer, gameMode, gameStarted, gameStatus, board]); 
-// NOTE: Removed aiThinking and makeMove from dependencies to stop the loop
-
-
-  // Handle game end
+  // 1. AI Move Logic
   useEffect(() => {
+    const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
+    
+    if (isAITurn && !aiThinking) {
+      setAiThinking(true);
+      const timer = setTimeout(() => {
+        try {
+          const move = getAIMove(board);
+          if (move !== -1) makeMove(move);
+        } catch (error) {
+          console.error("AI Error:", error);
+        } finally {
+          setAiThinking(false);
+        }
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPlayer, gameMode, gameStarted, gameStatus, board]);
+
+  // 2. Handle Game End (Rewards & Reset to Menu)
+  useEffect(() => {
+    // Only run this if the game just finished (gameStatus is set) and a bet is active
     if (gameStatus && gameStarted && isBetPlaced) {
       let profit = 0;
       let multiplier = 0;
@@ -69,59 +62,64 @@ useEffect(() => {
 
       if (gameStatus === 'won') {
         if (gameMode === 'pvp') {
-          if (winner === 1) {
-            resultText = 'Player 1 Wins!';
-            profit = betAmount! * 1.5;
-            multiplier = 1.5;
-          } else {
-            resultText = 'Player 2 Wins!';
-            profit = betAmount! * 1.5;
-            multiplier = 1.5;
-          }
+          resultText = winner === 1 ? 'Player 1 Wins!' : 'Player 2 Wins!';
+          multiplier = 1.5;
+          profit = (betAmount || 0) * multiplier;
         } else if (gameMode === 'ai') {
           if (winner === 1) {
             resultText = 'You Win!';
-            profit = betAmount! * 2;
             multiplier = 2;
+            profit = (betAmount || 0) * multiplier;
           } else {
             resultText = 'AI Wins!';
-            profit = 0;
             multiplier = 0;
+            profit = 0;
           }
         }
       } else if (gameStatus === 'draw') {
         resultText = 'Draw!';
-        profit = betAmount! * 0.5;
-        multiplier = 0.5;
+        multiplier = 1; // Return the bet
+        profit = (betAmount || 0) * multiplier;
       }
 
-      const newBalance = balance + profit - (betAmount || 0);
-      setBalance(newBalance);
+      // Update Balance: We only ADD the profit because the bet was already removed at start
+      if (profit > 0) {
+        setBalance(balance + profit);
+      }
 
+      // Log the result
       addGameResult(
         'Connect 4',
-        profit > 0 ? 'Win' : profit === 0 && gameStatus === 'draw' ? 'Draw' : 'Loss',
+        profit > (betAmount || 0) ? 'Win' : profit === (betAmount || 0) ? 'Draw' : 'Loss',
         profit,
-        newBalance
+        balance + profit
       );
 
       setGameResult(resultText);
       setResultMultiplier(multiplier);
+      
+      // IMPORTANT: Lock the bet so this effect doesn't run twice
+      setIsBetPlaced(false); 
 
+      // Return to menu after 3 seconds
       const timer = setTimeout(() => {
-        resetGame();
+        resetGame(); // Clears board/status
+        setGameStarted(false); // <--- THIS sends you back to the menu
         setGameResult(null);
         setResultMultiplier(0);
-        setIsBetPlaced(false);
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, balance, setBalance, betAmount, resetGame, setIsBetPlaced]);
+  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, betAmount, balance]);
 
   const handleStartGame = (mode: 'pvp' | 'ai', bet: number) => {
-    if (balance < bet) return;
+    if (balance < bet) {
+      alert("Insufficient balance!");
+      return;
+    }
 
+    // Deduct bet immediately when clicking start
     setBalance(balance - bet);
     setGameMode(mode);
     initializeBoard();
@@ -139,17 +137,23 @@ useEffect(() => {
         ) : (
           <div className="space-y-6">
             {gameResult && (
-              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-lg text-center">
+              <div className={`p-6 rounded-lg text-center animate-bounce ${resultMultiplier > 1 ? 'bg-green-500' : 'bg-red-500'} text-white`}>
                 <h2 className="text-3xl font-bold">{gameResult}</h2>
-                <p className="text-xl mt-2">{resultMultiplier}x Multiplier</p>
+                <p className="text-xl mt-2">{resultMultiplier}x Multiplier ({profit > 0 ? `+$${profit}` : '$0'})</p>
               </div>
             )}
 
             <Connect4Board />
 
-            <div className="bg-gray-700 p-4 rounded-lg text-center">
-              <p className="text-lg text-white">Bet: ${betAmount}</p>
-              <p className="text-lg text-white">Balance: ${balance}</p>
+            <div className="bg-gray-700 p-4 rounded-lg flex justify-between items-center border border-gray-600">
+              <div className="text-left">
+                <p className="text-sm text-gray-400 uppercase">Current Bet</p>
+                <p className="text-xl font-bold text-yellow-400">${betAmount}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-400 uppercase">Wallet Balance</p>
+                <p className="text-xl font-bold text-green-400">${balance.toFixed(2)}</p>
+              </div>
             </div>
           </div>
         )}
