@@ -61,22 +61,26 @@ useEffect(() => {
 }, [currentPlayer, gameMode, gameStarted, gameStatus, board]); 
 
 
+   // 2. Handle Game End (Rewards & Reset to Menu)
   useEffect(() => {
+    // We trigger this when gameStatus changes to 'won' or 'draw'
     if (gameStatus && gameStarted && isBetPlaced) {
       let profit = 0;
       let multiplier = 0;
       let resultText = '';
 
+      const currentBet = betAmount || 0;
+
       if (gameStatus === 'won') {
         if (gameMode === 'pvp') {
           resultText = winner === 1 ? 'Player 1 Wins!' : 'Player 2 Wins!';
           multiplier = 1.5;
-          profit = (betAmount || 0) * multiplier;
+          profit = currentBet * multiplier;
         } else if (gameMode === 'ai') {
           if (winner === 1) {
             resultText = 'You Win!';
             multiplier = 2;
-            profit = (betAmount || 0) * multiplier;
+            profit = currentBet * multiplier;
           } else {
             resultText = 'AI Wins!';
             multiplier = 0;
@@ -85,27 +89,40 @@ useEffect(() => {
         }
       } else if (gameStatus === 'draw') {
         resultText = 'Draw!';
-        multiplier = 1;
-        profit = (betAmount || 0) * multiplier;
+        multiplier = 1; // Return original bet
+        profit = currentBet * multiplier;
       }
 
+      // Update state for the UI overlay
       setSessionProfit(profit);
-      if (profit > 0) setBalance(balance + profit);
+      setGameResult(resultText);
+      setResultMultiplier(multiplier);
+      
+      // Update global balance
+      if (profit > 0) {
+        setBalance(balance + profit);
+      }
 
+      // Log to history
       addGameResult(
         'Connect 4',
-        profit > (betAmount || 0) ? 'Win' : profit === (betAmount || 0) ? 'Draw' : 'Loss',
+        profit > currentBet ? 'Win' : profit === currentBet ? 'Draw' : 'Loss',
         profit,
         balance + profit
       );
 
-      setGameResult(resultText);
-      setResultMultiplier(multiplier);
+      // Prevent this effect from running again for the same round
       setIsBetPlaced(false); 
 
+      // Return to menu after 3 seconds
       const timer = setTimeout(() => {
-        resetGame();
+        // 1. Reset the logic state in the store
+        resetGame(); 
+        
+        // 2. Explicitly hide the board and show the Config menu
         setGameStarted(false); 
+        
+        // 3. Clear local UI feedback
         setGameResult(null);
         setResultMultiplier(0);
         setSessionProfit(0);
@@ -113,7 +130,8 @@ useEffect(() => {
 
       return () => clearTimeout(timer);
     }
-  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, betAmount, balance, resetGame, setAiThinking, setBalance, setGameStarted, setIsBetPlaced]);
+  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, betAmount, balance, resetGame, setBalance, setGameStarted, setIsBetPlaced]);
+
 
   const handleStartGame = (mode: 'pvp' | 'ai', bet: number) => {
     if (balance < bet) return;
