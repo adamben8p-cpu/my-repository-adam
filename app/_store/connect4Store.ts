@@ -111,44 +111,42 @@ export const useConnect4Store = create<Connect4Store>()((set) => ({
 
   setAiThinking: (thinking) => set({ aiThinking: thinking }),
 
+  // ... inside your useConnect4Store ...
+
   makeMove: (column: number) => {
     set((state) => {
-      const newBoard = state.board.map(row => [...row]);
+      // 1. Block moves if game is over or AI is thinking
+      if (state.gameStatus || state.aiThinking) return state;
 
-      if (column < 0 || column >= COLS || newBoard[0][column] !== null) {
-        return state;
-      }
+      const newBoard = state.board.map(row => [...row]);
+      if (column < 0 || column >= COLS || newBoard[0][column] !== null) return state;
 
       for (let row = ROWS - 1; row >= 0; row--) {
         if (newBoard[row][column] === null) {
           newBoard[row][column] = state.currentPlayer;
 
-          const winner = checkWinner(newBoard);
-          if (winner) {
+          const winPlayer = checkWinner(newBoard);
+          if (winPlayer) {
             return {
-              ...state,
               board: newBoard,
-              gameStatus: 'won',
-              winner: winner,
+              gameStatus: 'won' as GameStatus,
+              winner: winPlayer,
             };
           }
 
           if (isBoardFull(newBoard)) {
             return {
-              ...state,
               board: newBoard,
-              gameStatus: 'draw',
+              gameStatus: 'draw' as GameStatus,
             };
           }
 
           return {
-            ...state,
             board: newBoard,
             currentPlayer: state.currentPlayer === 1 ? 2 : 1,
           };
         }
       }
-
       return state;
     });
   },
@@ -159,7 +157,14 @@ export const useConnect4Store = create<Connect4Store>()((set) => ({
     gameStatus: null,
     winner: null,
     gameMode: 'menu',
+    gameStarted: false, // CRUCIAL: This triggers the menu to show up
+    isBetPlaced: false,
+    aiThinking: false,
+    // Note: we keep betAmount as is so the user doesn't have to re-type it
   }),
+
+// ... rest of store
+
 
   switchPlayer: () => set((state) => ({
     currentPlayer: state.currentPlayer === 1 ? 2 : 1,
