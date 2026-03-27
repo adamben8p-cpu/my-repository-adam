@@ -13,8 +13,8 @@ export default function Connect4Board() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 w-full h-full max-w-full">
-      <div className="flex justify-between w-full max-w-[650px] px-4 font-bold text-lg sm:text-xl md:text-2xl">
+    <div className="flex flex-col items-center justify-center gap-6 w-full h-full max-w-full overflow-hidden">
+      <div className="flex justify-between w-full max-w-[350px] sm:max-w-[450px] md:max-w-[550px] px-4 font-bold text-sm sm:text-base md:text-lg px-2">
          <span className={`transition-all duration-300 ${currentPlayer === 1 ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] scale-110' : 'text-gray-600 opacity-50'}`}>
             PLAYER 1 (Yellow)
          </span>
@@ -23,15 +23,15 @@ export default function Connect4Board() {
          </span>
       </div>
 
-      <div className="grid gap-2 sm:gap-3 p-4 sm:p-5 md:p-6 bg-[#1e293b] rounded-2xl border-[6px] border-[#334155] shadow-2xl shrink-0">
+      <div className="flex flex-col gap-2 p-3 sm:p-4 bg-[#1e293b] rounded-2xl border-[4px] sm:border-[6px] border-[#334155] shadow-2xl w-full max-w-[350px] sm:max-w-[450px] md:max-w-[550px]">
         {board.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex gap-2 sm:gap-3">
+          <div key={rowIdx} className="flex gap-2">
             {row.map((cell, colIdx) => (
               <button
                 key={`${rowIdx}-${colIdx}`}
                 onClick={() => handleColumnClick(colIdx)}
                 disabled={gameStatus !== null || aiThinking || (gameMode === 'ai' && currentPlayer === 2)}
-                className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-20 lg:h-20 xl:w-24 xl:h-24 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner shrink-0 ${
+                className={`flex-1 aspect-square rounded-full transition-all duration-300 flex items-center justify-center shadow-inner ${
                   cell === null
                     ? 'bg-[#0f172a] hover:bg-[#334155] cursor-pointer ring-[2px] ring-inset ring-black/40'
                     : cell === 1

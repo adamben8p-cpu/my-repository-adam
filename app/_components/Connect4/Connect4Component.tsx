@@ -32,25 +32,27 @@ export default function Connect4Component() {
 
   // AI turn resolver
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
     
-    if (isAITurn && !aiThinking) {
-      // Must set synchronous thinking block immediately
-      setAiThinking(true);
-      timer = setTimeout(() => {
-        try {
-          const move = getAIMove(board);
-          if (move !== -1) makeMove(move);
-        } catch (err) {
-          console.error("AI Error:", err);
-        } finally {
-          setAiThinking(false);
-        }
-      }, 500); 
+    if (isAITurn) {
+      if (!useConnect4Store.getState().aiThinking) {
+        setAiThinking(true);
+        setTimeout(() => {
+          try {
+            const currentBoard = useConnect4Store.getState().board;
+            const move = getAIMove(currentBoard);
+            if (move !== -1) {
+               useConnect4Store.getState().makeMove(move);
+            }
+          } catch (err) {
+            console.error("AI Error:", err);
+          } finally {
+            useConnect4Store.getState().setAiThinking(false);
+          }
+        }, 500); 
+      }
     }
-    return () => clearTimeout(timer);
-  }, [currentPlayer, gameMode, gameStarted, gameStatus, board, aiThinking, setAiThinking, makeMove]);
+  }, [currentPlayer, gameMode, gameStarted, gameStatus]);
 
   // Game End Resolver
   useEffect(() => {
