@@ -23,7 +23,7 @@ export default function Connect4Board() {
          </span>
       </div>
 
-      <div className="grid gap-2 sm:gap-3 p-4 sm:p-5 bg-[#1e293b] rounded-2xl border-4 border-[#334155] shadow-2xl shrink-0 max-w-full overflow-hidden overflow-x-auto">
+      <div className="grid gap-2 sm:gap-3 p-4 sm:p-5 md:p-6 bg-[#1e293b] rounded-2xl border-[6px] border-[#334155] shadow-2xl shrink-0">
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex gap-2 sm:gap-3">
             {row.map((cell, colIdx) => (
@@ -31,16 +31,16 @@ export default function Connect4Board() {
                 key={`${rowIdx}-${colIdx}`}
                 onClick={() => handleColumnClick(colIdx)}
                 disabled={gameStatus !== null || aiThinking || (gameMode === 'ai' && currentPlayer === 2)}
-                className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner shrink-0 ${
+                className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-20 lg:h-20 xl:w-24 xl:h-24 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner shrink-0 ${
                   cell === null
-                    ? 'bg-[#0f172a] hover:bg-[#334155] cursor-pointer ring-1 ring-inset ring-black/50'
+                    ? 'bg-[#0f172a] hover:bg-[#334155] cursor-pointer ring-[2px] ring-inset ring-black/40'
                     : cell === 1
-                    ? 'bg-yellow-400 shadow-[0_4px_15px_rgba(250,204,21,0.5)] border-t border-yellow-200'
-                    : 'bg-red-500 shadow-[0_4px_15px_rgba(239,68,68,0.5)] border-t border-red-300'
+                    ? 'bg-yellow-400 shadow-[0_5px_15px_rgba(250,204,21,0.6)] border-t-2 border-yellow-200'
+                    : 'bg-red-500 shadow-[0_5px_15px_rgba(239,68,68,0.6)] border-t-2 border-red-300'
                 }`}
               >
                 {cell && (
-                  <div className={`w-3/4 h-3/4 rounded-full ${cell === 1 ? 'bg-yellow-300' : 'bg-red-400'} shadow-inner opacity-70`} />
+                  <div className={`w-[70%] h-[70%] rounded-full ${cell === 1 ? 'bg-yellow-300' : 'bg-red-400'} shadow-[inset_0_3px_6px_rgba(0,0,0,0.3)] opacity-80`} />
                 )}
               </button>
             ))}

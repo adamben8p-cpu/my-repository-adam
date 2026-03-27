@@ -117,10 +117,10 @@ export default function Connect4Component() {
         </div>
         <div className="flex justify-center items-center flex-col w-full lg:w-2/3 p-4 relative">
           
-          <div className="w-full flex justify-center items-center bg-[#0f172a] rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.05)] aspect-[8/5] relative overflow-hidden p-6 border border-[#1e2a36]">
+          <div className="w-full flex justify-center items-center bg-[#0f172a] rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.05)] relative p-8 border border-[#1e2a36] min-h-[500px]">
              
              {!gameStarted && !gameResult && (
-               <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/40 backdrop-blur-sm z-20">
+               <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/40 backdrop-blur-sm z-20 rounded-lg">
                  <h2 className="text-4xl font-extrabold text-[#38bdf8] mb-2 font-mono">CONNECT 4</h2>
                  <p className="text-gray-400 font-bold tracking-wider">PLACE A BET TO START CONNECTING</p>
                </div>

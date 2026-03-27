@@ -87,57 +87,43 @@ const evaluateBoard = (board: (Player)[][]): number => {
   return score;
 };
 
-// Recursive Minimax with Alpha-Beta Pruning
-const minimax = (board: (Player)[][], depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
-  if (checkWinner(board, 2)) return 100000 - depth;
-  if (checkWinner(board, 1)) return -100000 + depth;
-  
-  const moves = getValidMoves(board);
-  if (depth >= 4 || moves.length === 0) return evaluateBoard(board);
-
-  if (isMaximizing) {
-    let maxEval = -Infinity;
-    for (const col of moves) {
-      const next = makeMove(board, col, 2);
-      if (next) {
-        const ev = minimax(next, depth + 1, alpha, beta, false);
-        maxEval = Math.max(maxEval, ev);
-        alpha = Math.max(alpha, ev);
-        if (beta <= alpha) break;
-      }
-    }
-    return maxEval;
-  } else {
-    let minEval = Infinity;
-    for (const col of moves) {
-      const next = makeMove(board, col, 1);
-      if (next) {
-        const ev = minimax(next, depth + 1, alpha, beta, true);
-        minEval = Math.min(minEval, ev);
-        beta = Math.min(beta, ev);
-        if (beta <= alpha) break;
-      }
-    }
-    return minEval;
-  }
-};
-
 export const getAIMove = (board: (Player)[][]): number => {
   const moves = getValidMoves(board);
   if (moves.length === 0) return -1;
 
+  // 1. Can we win on this turn?
+  for (const col of moves) {
+    const next = makeMove(board, col, 2);
+    if (next && checkWinner(next, 2)) {
+      return col;
+    }
+  }
+
+  // 2. Do we need to block the player from winning on their immediate next turn?
+  for (const col of moves) {
+    const next = makeMove(board, col, 1);
+    if (next && checkWinner(next, 1)) {
+      return col;
+    }
+  }
+
+  // 3. Otherwise, score all valid moves and pick the highest potential setup
   let bestScore = -Infinity;
   let bestMove = moves[0];
 
   for (const col of moves) {
     const next = makeMove(board, col, 2);
     if (next) {
-      const score = minimax(next, 0, -Infinity, Infinity, false);
+      // Small randomizer to prevent deterministic predictable loops on equal scores
+      const randomJitter = Math.random() * 5; 
+      const score = evaluateBoard(next) + randomJitter;
+      
       if (score > bestScore) {
         bestScore = score;
         bestMove = col;
       }
     }
   }
+
   return bestMove;
 };
