@@ -97,9 +97,8 @@ export default function Connect4Component() {
         profit > 0 ? newBal : useCommonStore.getState().balance
       );
 
-      setIsBetPlaced(false); 
-
       const timer = setTimeout(() => {
+        setIsBetPlaced(false);
         resetGame(); // Resets layout tracking securely
         setGameResult(null);
         setResultMultiplier(0);

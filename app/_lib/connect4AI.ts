@@ -52,9 +52,15 @@ const evaluateBoard = (board: (Player)[][]): number => {
   const human = 1;
 
   const checkLine = (cells: (Player)[]) => {
-    const aiCount = cells.filter(x => x === ai).length;
-    const humanCount = cells.filter(x => x === human).length;
-    const emptyCount = cells.filter(x => x === null).length;
+    let aiCount = 0;
+    let humanCount = 0;
+    let emptyCount = 0;
+
+    for (let i = 0; i < 4; i++) {
+       if (cells[i] === ai) aiCount++;
+       else if (cells[i] === human) humanCount++;
+       else emptyCount++;
+    }
 
     if (aiCount === 4) return 10000;
     if (aiCount === 3 && emptyCount === 1) return 100;
@@ -87,7 +93,7 @@ const minimax = (board: (Player)[][], depth: number, alpha: number, beta: number
   if (checkWinner(board, 1)) return -100000 + depth;
   
   const moves = getValidMoves(board);
-  if (depth >= 5 || moves.length === 0) return evaluateBoard(board);
+  if (depth >= 4 || moves.length === 0) return evaluateBoard(board);
 
   if (isMaximizing) {
     let maxEval = -Infinity;
