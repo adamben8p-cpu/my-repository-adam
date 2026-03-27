@@ -20,56 +20,45 @@ export default function Connect4Component() {
     gameStarted,
     aiThinking,
     makeMove,
-    initializeBoard,
-    setGameMode,
-    setGameStarted,
     setAiThinking,
     setIsBetPlaced,
     resetGame,
   } = useConnect4Store();
 
-  const { balance, setBalance } = useCommonStore();
+  const { balance } = useCommonStore();
   const [gameResult, setGameResult] = useState<string | null>(null);
   const [resultMultiplier, setResultMultiplier] = useState(0);
-  const [sessionProfit, setSessionProfit] = useState(0); // Added state to fix build error
+  const [sessionProfit, setSessionProfit] = useState(0);
 
-// Replace your AI move useEffect with this one:
-useEffect(() => {
-  const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
-  
-  // We only start thinking if it's the AI turn and it isn't ALREADY thinking
-  if (isAITurn && !aiThinking) {
-    setAiThinking(true);
-
-    const timer = setTimeout(() => {
-      try {
-        const move = getAIMove(board);
-        if (move !== -1) {
-          makeMove(move);
-        }
-      } catch (err) {
-        console.error("AI Error:", err);
-      } finally {
-        // Crucial: This must happen after the move is processed
-        setAiThinking(false);
-      }
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }
-  // DO NOT add aiThinking or makeMove to this array!
-}, [currentPlayer, gameMode, gameStarted, gameStatus, board]); 
-
-
-   // 2. Handle Game End (Rewards & Reset to Menu)
+  // AI turn resolver
   useEffect(() => {
-    // We trigger this when gameStatus changes to 'won' or 'draw'
+    let timer: NodeJS.Timeout;
+    const isAITurn = gameMode === 'ai' && currentPlayer === 2 && gameStarted && !gameStatus;
+    
+    if (isAITurn && !aiThinking) {
+      // Must set synchronous thinking block immediately
+      setAiThinking(true);
+      timer = setTimeout(() => {
+        try {
+          const move = getAIMove(board);
+          if (move !== -1) makeMove(move);
+        } catch (err) {
+          console.error("AI Error:", err);
+        } finally {
+          setAiThinking(false);
+        }
+      }, 500); 
+    }
+    return () => clearTimeout(timer);
+  }, [currentPlayer, gameMode, gameStarted, gameStatus, board, aiThinking, setAiThinking, makeMove]);
+
+  // Game End Resolver
+  useEffect(() => {
     if (gameStatus && gameStarted && isBetPlaced) {
       let profit = 0;
       let multiplier = 0;
       let resultText = '';
-
-      const currentBet = betAmount || 0;
+      const currentBet = betAmount ?? 0;
 
       if (gameStatus === 'won') {
         if (gameMode === 'pvp') {
@@ -79,7 +68,7 @@ useEffect(() => {
         } else if (gameMode === 'ai') {
           if (winner === 1) {
             resultText = 'You Win!';
-            multiplier = 2;
+            multiplier = 2.0;
             profit = currentBet * multiplier;
           } else {
             resultText = 'AI Wins!';
@@ -89,84 +78,80 @@ useEffect(() => {
         }
       } else if (gameStatus === 'draw') {
         resultText = 'Draw!';
-        multiplier = 1; // Return original bet
+        multiplier = 1; // Recoup entry
         profit = currentBet * multiplier;
       }
 
-      // Update state for the UI overlay
       setSessionProfit(profit);
       setGameResult(resultText);
       setResultMultiplier(multiplier);
       
-      // Update global balance
-      if (profit > 0) {
-        setBalance(balance + profit);
-      }
+      const newBal = useCommonStore.getState().balance + profit;
+      // We process win profit addition here directly interacting with Zustand correctly
+      if (profit > 0) useCommonStore.getState().setBalance(newBal);
 
-      // Log to history
       addGameResult(
         'Connect 4',
         profit > currentBet ? 'Win' : profit === currentBet ? 'Draw' : 'Loss',
         profit,
-        balance + profit
+        profit > 0 ? newBal : useCommonStore.getState().balance
       );
 
-      // Prevent this effect from running again for the same round
       setIsBetPlaced(false); 
 
-      // Return to menu after 3 seconds
-// Inside your game end useEffect timer:
-const timer = setTimeout(() => {
-  resetGame(); // This now sets gameStarted to false and mode to menu
-  setGameResult(null);
-  setResultMultiplier(0);
-  setSessionProfit(0);
-}, 3000);
-
+      const timer = setTimeout(() => {
+        resetGame(); // Resets layout tracking securely
+        setGameResult(null);
+        setResultMultiplier(0);
+        setSessionProfit(0);
+      }, 3500);
 
       return () => clearTimeout(timer);
     }
-  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, betAmount, balance, resetGame, setBalance, setGameStarted, setIsBetPlaced]);
-
-
-  const handleStartGame = (mode: 'pvp' | 'ai', bet: number) => {
-    if (balance < bet) return;
-    setBalance(balance - bet);
-    setGameMode(mode);
-    initializeBoard();
-    setGameStarted(true);
-    setIsBetPlaced(true);
-  };
+  }, [gameStatus, gameStarted, isBetPlaced, winner, gameMode, betAmount, resetGame, setIsBetPlaced]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-4xl font-bold text-center text-white mb-8">Connect 4 Casino</h1>
+    <main className="flex flex-col md:flex-row gap-4 md:gap-8 p-4 w-full max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row w-full p-4 lg:p-8">
+        <div className="flex justify-start w-full lg:w-1/3 p-4">
+          <Connect4Config />
+        </div>
+        <div className="flex justify-center items-center flex-col w-full lg:w-2/3 p-4 relative">
+          
+          <div className="w-full flex justify-center items-center bg-[#0f172a] rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.05)] aspect-[8/5] relative overflow-hidden p-6 border border-[#1e2a36]">
+             
+             {!gameStarted && !gameResult && (
+               <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/40 backdrop-blur-sm z-20">
+                 <h2 className="text-4xl font-extrabold text-[#38bdf8] mb-2 font-mono">CONNECT 4</h2>
+                 <p className="text-gray-400 font-bold tracking-wider">PLACE A BET TO START CONNECTING</p>
+               </div>
+             )}
 
-        {!gameStarted ? (
-          <Connect4Config onStartGame={handleStartGame} balance={balance} />
-        ) : (
-          <div className="space-y-6">
-            {gameResult && (
-              <div className={`p-6 rounded-lg text-center animate-bounce ${resultMultiplier >= 1 ? 'bg-green-500' : 'bg-red-500'} text-white`}>
-                <h2 className="text-3xl font-bold">{gameResult}</h2>
-                <p className="text-xl mt-2">{resultMultiplier}x Multiplier ({sessionProfit > 0 ? `+$${sessionProfit}` : '$0'})</p>
-              </div>
-            )}
-            <Connect4Board />
-            <div className="bg-gray-700 p-4 rounded-lg flex justify-between items-center border border-gray-600">
-              <div className="text-left text-white">
-                <p className="text-sm text-gray-400 uppercase">Current Bet</p>
-                <p className="text-xl font-bold text-yellow-400">${betAmount}</p>
-              </div>
-              <div className="text-right text-white">
-                <p className="text-sm text-gray-400 uppercase">Wallet Balance</p>
-                <p className="text-xl font-bold text-green-400">${balance.toFixed(2)}</p>
-              </div>
-            </div>
+             {gameResult && (
+               <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 backdrop-blur-md z-30 transition-all">
+                 <h2 className={`text-5xl font-extrabold mb-4 drop-shadow-xl ${resultMultiplier > 0 ? 'text-[#4cd964]' : 'text-[#ef4444]'}`}>
+                   {gameResult}
+                 </h2>
+                 {resultMultiplier > 0 ? (
+                   <div className="flex flex-col items-center">
+                     <p className="text-xl text-white font-bold mb-2">Payout</p>
+                     <p className="text-3xl font-extrabold text-[#4cd964] bg-[#4cd964]/10 px-8 py-3 rounded-full ring-2 ring-[#4cd964]/50 shadow-[0_0_15px_rgba(76,217,100,0.5)]">
+                       +${sessionProfit.toFixed(2)}
+                     </p>
+                   </div>
+                 ) : (
+                   <p className="text-xl text-gray-300 font-bold">
+                     Better luck next time
+                   </p>
+                 )}
+               </div>
+             )}
+
+             <Connect4Board />
           </div>
-        )}
+
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
