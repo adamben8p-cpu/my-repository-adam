@@ -41,12 +41,16 @@ export default function Connect4Component() {
           try {
             const currentBoard = useConnect4Store.getState().board;
             const move = getAIMove(currentBoard);
+            
+            // Critical Fix: Clear the thinking lock BEFORE dispatching the move, 
+            // otherwise the Zustand store explicitly rejects it!
+            useConnect4Store.getState().setAiThinking(false);
+
             if (move !== -1) {
                useConnect4Store.getState().makeMove(move);
             }
           } catch (err) {
             console.error("AI Error:", err);
-          } finally {
             useConnect4Store.getState().setAiThinking(false);
           }
         }, 500); 
